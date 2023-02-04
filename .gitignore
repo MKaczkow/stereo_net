@@ -1,3 +1,89 @@
+# Datasets
+exercises/data/*
+exercises/mnist_cnn_bis/data/*
+t10k-images.idx3-ubyte
+t10k-labels.idx1-ubyte
+train-images.idx3-ubyte
+train-labels.idx1-ubyte
+t10k-images.idx3-ubyte.gz
+t10k-labels.idx1-ubyte.gz
+train-images.idx3-ubyte.gz
+train-labels.idx1-ubyte.gz
+**/data/**
+
+# Archive
+archive/v4/img/named_v0-3/
+archive/v4/img/unnamed_v0-3/
+archive/v4/img/v4/
+archive/v4/runs/
+archive/v4/notebooks/
+
+
+# Experiments
+experiments/notes/**
+experiments/model_checkpoints/**
+experiments/runs/**
+experiments/src/stereonet/lightning_logs/**
+
+# Src
+src/img/**
+src/lightning_logs/**
+src/log/**
+src/runs/**
+src/runs/
+src/notebooks/
+
+# VSC
+.vscode
+
+# TensorBoard
+src/runs/**
+src/runs
+
+# temporary
+**/*.tmp
+
+# PFM files
+**/*.pfm
+
+# webp files
+**/*.webp
+
+# logs
+# **/*.log
+src/log/v0-3
+src/log/stereo_net_output_*.log
+src/log/inference_measurements_*.log
+!src/log/sf_train_val_EPE.log
+archive/**/*.log
+
+# images dir
+src/img/**
+# src/img
+
+# pictures
+# **/*.jpg
+# **/*.JPG
+# **/*.png
+# **/*.PNG
+# !src/img/example_flying_things.png
+# !src/img/example_driving.png
+# !src/img/example_monkaa.png
+# !src/img/example_kitti_2015.png
+# !src/img/example_kitti_2012.png
+!src/img/results_*.png
+!src/img/example_*.png
+
+# draft 
+**/DRAFT.ipynb
+
+# virtual enviroments
+**/venv/**
+
+# Jupyter stuff
+exercises/mnist_cnn_bis/mnist_cnn_bis/
+exercises/mnist_cnn_bis/mnist_cnn_bis/Scripts/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -56,7 +142,6 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -127,3 +212,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Manually added
+.idea/
