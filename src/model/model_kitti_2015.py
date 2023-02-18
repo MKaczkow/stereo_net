@@ -17,7 +17,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 
 import stereonet_types as st
-import utils as utils
+import src.utils.misc as misc
 
 
 class StereoNet(pl.LightningModule):
@@ -261,7 +261,7 @@ class StereoNet(pl.LightningModule):
         self.log("val_loss_epoch", loss, on_epoch=True, logger=True)
         self.log("val_3px_error_epoch", three_px_error, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         if batch_idx == 0:
-            fig = utils.OLD_plot_figure(left[0].detach().cpu(), right[0].detach().cpu(), disp_gt[0].detach().cpu(), disp_pred[0].detach().cpu())
+            fig = misc.OLD_plot_figure(left[0].detach().cpu(), right[0].detach().cpu(), disp_gt[0].detach().cpu(), disp_pred[0].detach().cpu())
             self.logger.experiment.add_figure("generated_images", fig, self.current_epoch, close=True)
 
     def configure_optimizers(self) -> Dict[str, Any]:

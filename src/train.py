@@ -13,24 +13,23 @@ from pytorch_lightning.callbacks import(
      ModelCheckpoint
 )
 
-from utils import (
-    Rescale, SceneflowDataset,
-    Kitti2012Dataset, Kitti2015Dataset
-)
+from src.utils.misc import Rescale
+from datasets.KITTI2012Dataset import Kitti2012Dataset
+from datasets.KITTI2015Dataset import Kitti2015Dataset
+from datasets.SceneFlowDataset import SceneFlowDataset
 
-from model_sceneflow import StereoNet
-# from model_kitti_2015 import StereoNet
-# from model_kitti_2012 import StereoNet
+from model.model_sceneflow import StereoNet
+# from model.model_kitti_2015 import StereoNet
+# from model.model_kitti_2012 import StereoNet
 
 
 KITTI_2012_ROOT = \
-    r'D:\engineering_thesis_data\Kitti_2012\data_stereo_flow\training'
+    r'fill_in'
 KITTI_2015_ROOT = \
-    r'D:\engineering_thesis_data\Kitti_2015\data_scene_flow\training'
-SCENEFLOW_ROOT = r'D:\engineering_thesis_data\SceneFlow'
+    r'fill_in'
+SCENEFLOW_ROOT = r'fill_in'
 CHECKPOINT_PATH = \
-    r'D:\__repos\engineering_thesis\experiments\src\stereonet\
-    \lightning_logs\version_38\checkpoints\epoch=22-step=864006.ckpt'
+    r'fill_in'
 
 
 def main(dataset):
@@ -56,12 +55,12 @@ def main(dataset):
 
     elif dataset == 'sceneflow':
         
-        train_dataset = SceneflowDataset(
+        train_dataset = SceneFlowDataset(
             SCENEFLOW_ROOT, string_exclude='TEST', 
             transforms=train_transforms
             )
         val_transforms = [Rescale()]
-        val_dataset = SceneflowDataset(
+        val_dataset = SceneFlowDataset(
             SCENEFLOW_ROOT, string_include='TEST', 
             transforms=val_transforms
             )

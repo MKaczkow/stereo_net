@@ -8,14 +8,16 @@ Loss function is the Robust Loss function (https://arxiv.org/abs/1701.03077)
 
 from typing import Tuple, List, Optional, Dict, Any
 from collections import OrderedDict
+from datetime import datetime
 
+import matplotlib.pyplot as plt
 import torch
 from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
 import stereonet_types as st
-import utils as utils
+import src.utils.misc as misc
 
 
 class StereoNet(pl.LightningModule):
@@ -38,7 +40,7 @@ class StereoNet(pl.LightningModule):
         self.k_downsampling_layers = k_downsampling_layers
         self.k_refinement_layers = k_refinement_layers
         self.candidate_disparities = candidate_disparities
-        self.mask = mask
+        self.mask = mask  # TODO: Implement in loss function
 
         self.feature_extractor_filters = feature_extractor_filters
         self.cost_volumizer_filters = cost_volumizer_filters
@@ -89,14 +91,14 @@ class StereoNet(pl.LightningModule):
 
         return disparity_pyramid
 
-    def forward(self, sample: st.Sample_Torch) -> torch.Tensor: 
+    def forward(self, sample: st.Sample_Torch) -> torch.Tensor:  # type: ignore[override] # pylint: disable=arguments-differ
         """
         Do the forward pass using forward_pyramid (for the left disparity map) and return only the full resolution map.
         """
         disparities = self.forward_pyramid(sample, side='left')
-        return disparities[-1]
+        return disparities[-1]  # Ultimately, only output the last refined disparity
 
-    def training_step(self, batch: st.Sample_Torch, _) -> torch.Tensor:
+    def training_step(self, batch: st.Sample_Torch, _) -> torch.Tensor:  # type: ignore[override, no-untyped-def] # pylint: disable=arguments-differ
         """
         Compute the disparities for both the left and right volumes then compute the loss for each.  Finally take the mean between the two losses and
         return that as the final loss.
@@ -105,20 +107,29 @@ class StereoNet(pl.LightningModule):
         """
         left = batch['left']
         right = batch['right']
+        
         disp_gt_left = batch['disp_left']
-        disp_gt_right = batch['disp_right']
+        if 'disp_right' in batch:
+            disp_gt_right = batch['disp_right']
 
         sample = {'left': left, 'right': right}
 
+        # Non-uniform because the sizes of each of the list entries aren't the same
         disp_pred_left_nonuniform = self.forward_pyramid(sample, side='left')
-        disp_pred_right_nonuniform = self.forward_pyramid(sample, side='right')
+        if 'disp_right' in batch:
+            disp_pred_right_nonuniform = self.forward_pyramid(sample, side='right')
 
-        for idx, (disparity_left, disparity_right) in enumerate(zip(disp_pred_left_nonuniform, disp_pred_right_nonuniform)):
-            disp_pred_left_nonuniform[idx] = F.interpolate(disparity_left, [left.size()[2], left.size()[3]], mode='bilinear', align_corners=True)
-            disp_pred_right_nonuniform[idx] = F.interpolate(disparity_right, [left.size()[2], left.size()[3]], mode='bilinear', align_corners=True)
+        if 'disp_right' in batch:
+            for idx, (disparity_left, disparity_right) in enumerate(zip(disp_pred_left_nonuniform, disp_pred_right_nonuniform)):
+                disp_pred_left_nonuniform[idx] = F.interpolate(disparity_left, [left.size()[2], left.size()[3]], mode='bilinear', align_corners=True)
+                disp_pred_right_nonuniform[idx] = F.interpolate(disparity_right, [left.size()[2], left.size()[3]], mode='bilinear', align_corners=True)
+        else:
+            for idx, disparity_left in enumerate(disp_pred_left_nonuniform):
+                disp_pred_left_nonuniform[idx] = F.interpolate(disparity_left, [left.size()[2], left.size()[3]], mode='bilinear', align_corners=True)
 
         disp_pred_left = torch.stack(disp_pred_left_nonuniform, dim=0)
-        disp_pred_right = torch.stack(disp_pred_right_nonuniform, dim=0)
+        if 'disp_right' in batch:
+            disp_pred_right = torch.stack(disp_pred_right_nonuniform, dim=0)
 
         def _tiler(tensor: torch.Tensor, matching_size: Optional[List[int]] = None) -> torch.Tensor:
             if matching_size is None:
@@ -126,47 +137,71 @@ class StereoNet(pl.LightningModule):
             return tensor.tile(matching_size)
 
         disp_gt_left = _tiler(disp_gt_left)
-        disp_gt_right = _tiler(disp_gt_right)
+        if 'disp_right' in batch:
+            disp_gt_right = _tiler(disp_gt_right)
 
         ######################################################################
 
+        # not_empty_left = disp_gt_left > 0
+        # not_empty_right = disp_gt_right > 0
+
+        # print(disp_gt_left.shape, disp_gt_right.shape, disp_pred_left.shape, disp_pred_right.shape)
+        # print(disp_gt_left.max(), disp_gt_right.max(), disp_pred_left.max(), disp_pred_right.max())
+        # print(disp_gt_left.min(), disp_gt_right.min(), disp_pred_left.min(), disp_pred_right.min())
+        # print()
+
+        # disp_gt_left = disp_gt_left[not_empty_left]
+        # disp_gt_right = disp_gt_right[not_empty_right]
+        # disp_pred_left = disp_pred_left[not_empty_left]
+        # disp_pred_right = disp_pred_right[not_empty_right]
+
         disp_pred_left = torch.where(disp_gt_left > 0, disp_pred_left, 0)
-        disp_pred_right = torch.where(disp_gt_right > 0, disp_pred_right, 0)
+        if 'disp_right' in batch:
+            disp_pred_right = torch.where(disp_gt_right > 0, disp_pred_right, 0)
+        # print(not_empty_left.shape, not_empty_right.shape)
+        # print(disp_gt_left.shape, disp_gt_right.shape, disp_pred_left.shape, disp_pred_right.shape)
+        # print(disp_gt_left.max(), disp_gt_right.max(), disp_pred_left.max(), disp_pred_right.max())
+        # print(disp_gt_left.min(), disp_gt_right.min(), disp_pred_left.min(), disp_pred_right.min())
+        # print()
+        # print()
 
         ######################################################################
 
         if self.mask:
             left_mask = (disp_gt_left < self.candidate_disparities).detach()
-            right_mask = (disp_gt_right < self.candidate_disparities).detach()
+            if 'disp_right' in batch:
+                right_mask = (disp_gt_right < self.candidate_disparities).detach()
 
             loss_left = torch.mean(robust_loss(disp_gt_left[left_mask] - disp_pred_left[left_mask], alpha=1, c=2))
-            loss_right = torch.mean(robust_loss(disp_gt_right[right_mask] - disp_pred_right[right_mask], alpha=1, c=2))
+            if 'disp_right' in batch:
+                loss_right = torch.mean(robust_loss(disp_gt_right[right_mask] - disp_pred_right[right_mask], alpha=1, c=2))
         else:
             loss_left = torch.mean(robust_loss(disp_gt_left - disp_pred_left, alpha=1, c=2))
-            loss_right = torch.mean(robust_loss(disp_gt_right - disp_pred_right, alpha=1, c=2))
+            if 'disp_right' in batch:
+                loss_right = torch.mean(robust_loss(disp_gt_right - disp_pred_right, alpha=1, c=2))
 
-        loss = (loss_left + loss_right) / 2
+        if 'disp_right' in batch:
+            loss = (loss_left + loss_right) / 2
+        else:
+            loss = loss_left
 
-        ######################################################################
-
-        print(type(disp_pred_left))
+        # print(type(disp_pred_left))
         non_zero_pixels = torch.count_nonzero(disp_gt_left)
-        print(non_zero_pixels)
+        # print(non_zero_pixels)
         error_plane = torch.abs(disp_pred_left - disp_gt_left)
-        print(torch.count_nonzero(error_plane))
+        # print(torch.count_nonzero(error_plane))
         error_plane_filtered = \
             torch.where((error_plane > 3) & (error_plane > disp_gt_left * 0.05), error_plane, 0)
-        print(torch.count_nonzero(error_plane_filtered))
+        # print(torch.count_nonzero(error_plane_filtered))
         three_px_error = torch.count_nonzero(error_plane_filtered) / non_zero_pixels
-
-        ######################################################################
+        # print(three_px_error)
 
         self.log("train_loss_step", loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        self.log("3px_error_epoch", three_px_error, on_step=False, on_epoch=True, prog_bar=False, logger=True)
+        self.log("train_3px_error_epoch", three_px_error, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         self.log("train_loss_epoch", F.l1_loss(disp_pred_left[-1], disp_gt_left[-1]), on_step=False, on_epoch=True, prog_bar=False, logger=True)
         return loss
 
-    def validation_step(self, batch: st.Sample_Torch, batch_idx: int) -> None:
+    def validation_step(self, batch: st.Sample_Torch, batch_idx: int) -> None:  # type: ignore[override] # pylint: disable=arguments-differ
         """
         Compute the L1 loss (End-point-error) over the validation set for the left disparity map.
 
@@ -179,11 +214,54 @@ class StereoNet(pl.LightningModule):
         sample = {'left': left, 'right': right}
 
         disp_pred = self(sample)
+        disp_pred = torch.where(disp_gt > 0, disp_pred, 0)
+        
+        # print(type(disp_pred))
+        non_zero_pixels = torch.count_nonzero(disp_gt)
+        # print(non_zero_pixels)
+        error_plane = torch.abs(disp_pred - disp_gt)
+        # print(torch.count_nonzero(error_plane))
+        error_plane_filtered = \
+            torch.where((error_plane > 3) & (error_plane > disp_gt * 0.05), error_plane, 0)
+        # print(torch.count_nonzero(error_plane_filtered))
+        three_px_error = torch.count_nonzero(error_plane_filtered) / non_zero_pixels
+        # print(three_px_error)
+
+        ######################################################################
+
+        # utils.plot_and_save_figure(left.to('cpu'), right.to('cpu'), disp_gt.squeeze().to('cpu'), disp_pred.squeeze().to('cpu'))
+        # utils.plot_and_save_figure(disp_gt.squeeze().to('cpu'), disp_pred.squeeze().to('cpu'), error_plane.squeeze().to('cpu'), error_plane_filtered.squeeze().to('cpu'))
+        # i = 0
+        # plt.close('all')
+        # fig, ax = plt.subplots(ncols=2, nrows=2)
+        # left = (left + 1) / 2   # rescale
+        # right = (right + 1) / 2   # rescale
+        # disp_gt = torch.moveaxis(disp_gt, 0, 2)
+        # disp_pred = torch.moveaxis(disp_pred, 0, 2)
+        # ax[0, 0].imshow(error_plane.squeeze().to('cpu'), cmap='plasma')
+        # ax[0, 1].imshow(error_plane_filtered.squeeze().to('cpu'), cmap='plasma')
+        # ax[1, 0].imshow(disp_gt.squeeze().to('cpu'), vmin=disp_gt.min(), vmax=disp_gt.max(), cmap='plasma')
+        # im = ax[1, 1].imshow(disp_pred.squeeze().to('cpu'), vmin=disp_gt.min(), vmax=disp_gt.max(), cmap='plasma')
+        # ax[0, 0].title.set_text('Left')
+        # ax[0, 1].title.set_text('Right')
+        # ax[1, 0].title.set_text('Ground truth disparity')
+        # ax[1, 1].title.set_text('Predicted disparity')
+        # fig.subplots_adjust(right=0.8)
+        # cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.27])
+        # fig.colorbar(im, cax=cbar_ax)
+
+        # IMG_DIR = r'D:\__repos\engineering_thesis\src\img'
+        # timestamp = datetime.now().strftime("%Y-%m-%d___%H%M__%S%f")[:-4]
+        # plt.savefig(f'{IMG_DIR}/results_{timestamp}_{i}.png', dpi=300)
+        # i += 1
+
+        ######################################################################
 
         loss = F.l1_loss(disp_pred, disp_gt)
         self.log("val_loss_epoch", loss, on_epoch=True, logger=True)
+        self.log("val_3px_error_epoch", three_px_error, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         if batch_idx == 0:
-            fig = utils.OLD_plot_figure(left[0].detach().cpu(), right[0].detach().cpu(), disp_gt[0].detach().cpu(), disp_pred[0].detach().cpu())
+            fig = misc.OLD_plot_figure(left[0].detach().cpu(), right[0].detach().cpu(), disp_gt[0].detach().cpu(), disp_pred[0].detach().cpu())
             self.logger.experiment.add_figure("generated_images", fig, self.current_epoch, close=True)
 
     def configure_optimizers(self) -> Dict[str, Any]:
@@ -194,12 +272,14 @@ class StereoNet(pl.LightningModule):
         to, lets say, a rescale factor of 2, 1/2 width 1/2 height, (total reduction of 2**2) then each epoch will only train on 1/4 the number of
         image patches.  Therefore, to keep the learning rate similar, delay the decay by the square of the rescale factor.
         """
-        optimizer = torch.optim.RMSprop(self.parameters(), lr=1e-3, weight_decay=0.0001)
+        # optimizer = torch.optim.RMSprop(self.parameters(), lr=1e-3, weight_decay=0.0001)
+        optimizer = torch.optim.RMSprop(self.parameters(), lr=1e-4, weight_decay=0.0001)
         lr_dict = {"scheduler": torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, last_epoch=-1),
                    "interval": "epoch",
                    "frequency": 1,
                    "name": "ExponentialDecayLR"}
-        config = {"optimizer": optimizer, "lr_scheduler": lr_dict}
+        config = {"optimizer": optimizer}
+        # config = {"optimizer": optimizer, "lr_scheduler": lr_dict}
         return config
 
 
@@ -225,7 +305,7 @@ class FeatureExtractor(torch.nn.Module):
 
         self.net = nn.Sequential(net)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # pylint: disable=invalid-name, missing-function-docstring
         x = self.net(x)
         return x
 
@@ -248,7 +328,7 @@ class CostVolume(torch.nn.Module):
         for block_idx in range(4):
             net[f'segment_0_conv_{block_idx}'] = nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, padding=1)
             net[f'segment_0_bn_{block_idx}'] = nn.BatchNorm3d(num_features=out_channels)
-            net[f'segment_0_act_{block_idx}'] = nn.LeakyReLU(negative_slope=0.2)
+            net[f'segment_0_act_{block_idx}'] = nn.LeakyReLU(negative_slope=0.2)  # Not clear in paper if default or implied to be 0.2 like the rest
 
             in_channels = out_channels
 
@@ -256,7 +336,7 @@ class CostVolume(torch.nn.Module):
 
         self.net = nn.Sequential(net)
 
-    def forward(self, x: Tuple[torch.Tensor, torch.Tensor], side: str = 'left') -> torch.Tensor:
+    def forward(self, x: Tuple[torch.Tensor, torch.Tensor], side: str = 'left') -> torch.Tensor:  # pylint: disable=invalid-name
         """
         The cost volume effectively holds one of the left/right images constant (albeit clipping) and computes the difference with a
         shifting (left/right) portion of the corresponding image.  By default, this method holds the left image stationary and sweeps the right image.
@@ -316,7 +396,7 @@ class Refinement(torch.nn.Module):
 
         self.net = nn.Sequential(net)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # pylint: disable=invalid-name, missing-function-docstring
         x = self.net(x)
         return x
 
@@ -347,7 +427,7 @@ class ResBlock(torch.nn.Module):
         self.batch_norm_2 = nn.BatchNorm2d(num_features=out_channels)
         self.activation_2 = nn.LeakyReLU(negative_slope=0.2)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # pylint: disable=invalid-name
         """
         Original Residual Unit: https://arxiv.org/pdf/1603.05027.pdf (Fig 1. Left)
         """
@@ -357,7 +437,10 @@ class ResBlock(torch.nn.Module):
         res = self.activation_1(res)
         res = self.conv_2(res)
         res = self.batch_norm_2(res)
-        out = res + x
+
+        # I'm not really sure why the type definition is required here... nn.Conv2d already returns type Tensor...
+        # So res should be of type torch.Tensor AND x is already defined as type torch.Tensor.
+        out: torch.Tensor = res + x
         out = self.activation_2(out)
 
         return out
@@ -369,6 +452,8 @@ def soft_argmin(cost: torch.Tensor, max_downsampled_disps: int) -> torch.Tensor:
     cost is the C_i(d) term.  The exp/sum(exp) == softmax function.
     """
     disparity_softmax = F.softmax(-cost, dim=1)
+    # TODO: Bilinear interpolate the disparity dimension back to D to perform the proper d*exp(-C_i(d))
+
     disparity_grid = torch.linspace(0, max_downsampled_disps, disparity_softmax.size(1)).reshape(1, -1, 1, 1)
     disparity_grid = disparity_grid.type_as(disparity_softmax)
 

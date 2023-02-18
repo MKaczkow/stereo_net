@@ -6,3 +6,7 @@ Repo for implementation of StereoNet
 2. Data description
 3. Prepare awesome README
 4. Private -> Public
+
+### More specific
+* utils/misc.py
+* model/*.py

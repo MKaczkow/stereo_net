@@ -15,7 +15,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 
 import stereonet_types as st
-import utils as utils
+import src.utils.misc as misc
 
 
 class StereoNet(pl.LightningModule):
