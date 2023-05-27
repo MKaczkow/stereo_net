@@ -1,6 +1,6 @@
 # Data
 
-Data directories should be organized as follows and respective root paths need to be added to [datasets classes](../src/datasets/README.md). 
+Data directories should be organized as follows and respective root paths need to be added to [datasets classes](../src/datasets). 
 
 
 ### SceneFlow

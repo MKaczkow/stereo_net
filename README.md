@@ -1,7 +1,8 @@
 # stereo_net
 Repo for implementation of StereoNet
 
-First of all, I would like to acknowledge the authors of the paper. I am not the author of the paper, I am was just trying to re-implement it. Link to the paper:    https://arxiv.org/abs/1807.08865.   
+First of all, I would like to acknowledge the authors of the paper. I am not the author of the paper, I am was just trying to re-implement it. Link to the paper:  
+https://arxiv.org/abs/1807.08865.   
 
 I also relied heavy on this awesome repos:  
 https://github.com/andrewlstewart/StereoNet_PyTorch  
