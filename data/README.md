@@ -8,8 +8,38 @@ Data directories should be organized as follows and respective root paths need t
 ├── data
 │   ├── SceneFlow 
 │   │   ├── Driving
+│   │   |   ├── disparity
+│   │   |   |   ├── *.pfm
+│   │   |   |   └── ...
+│   │   |   ├── RGB_cleanpass
+│   │   |   |   ├── left
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
+│   │   |   |   ├── right
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
 │   │   ├── Monkaa
+│   │   |   ├── disparity
+│   │   |   |   ├── *.pfm
+│   │   |   |   └── ...
+│   │   |   ├── RGB_cleanpass
+│   │   |   |   ├── left
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
+│   │   |   |   ├── right
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
 │   │   └── FlyingThings3D
+│   │   |   ├── disparity
+│   │   |   |   ├── *.pfm
+│   │   |   |   └── ...
+│   │   |   ├── RGB_cleanpass
+│   │   |   |   ├── left
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
+│   │   |   |   ├── right
+│   │   |   |   |   ├── *.png
+│   │   |   |   |   └── ...
 ```
 
 ### KITTI 2012
