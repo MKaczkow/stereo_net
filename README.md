@@ -34,12 +34,3 @@ README's for specific folders are in the folders themselves:
 * [src.datasets](src/datasets)
 * [src.model](src/model)
 * [src.utils](src/utils)
-
-## TODO
-1. Code cleanup and organization
-3. Prepare awesome README
-4. Private -> Public
-
-### More specific
-* utils/misc.py
-* model/*.py

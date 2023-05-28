@@ -1,8 +1,7 @@
 jupyter
-seaborn
-sklearn
 opencv-python
 Pillow
-torchsummary
 torch
 tensorboard
+matplotlib
+numpy
