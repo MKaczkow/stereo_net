@@ -14,7 +14,6 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
-import stereonet_types as st
 import src.utils.misc as misc
 
 
@@ -388,7 +387,7 @@ def soft_argmin(cost: torch.Tensor, max_downsampled_disps: int) -> torch.Tensor:
     return disp
 
 
-def robust_loss(x: torch.Tensor, alpha: st.Number, c: st.Number) -> torch.Tensor:  # pylint: disable=invalid-name
+def robust_loss(x: torch.Tensor, alpha, c) -> torch.Tensor:  # pylint: disable=invalid-name
     """
     A General and Adaptive Robust Loss Function (https://arxiv.org/abs/1701.03077)
     """

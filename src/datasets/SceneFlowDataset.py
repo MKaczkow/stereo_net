@@ -38,7 +38,7 @@ class SceneFlowDataset(Dataset):
         disp_right = disp_right[..., np.newaxis]
         disp_right = np.ascontiguousarray(disp_right)
 
-        sample: st.Sample_Numpy = {
+        sample = {
             'left': left, 'right': right, 
             'disp_left': disp_left, 'disp_right': disp_right
             }
