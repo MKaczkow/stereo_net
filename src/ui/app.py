@@ -3,6 +3,8 @@ import torch
 from PIL import Image
 import io
 
+# NOTE: launch from jupyter notebook, otherwise it will not work
+
 # Load your PyTorch model
 
 if torch.cuda.is_available():
