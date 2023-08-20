@@ -5,3 +5,4 @@ torch
 tensorboard
 matplotlib
 numpy
+gradio
