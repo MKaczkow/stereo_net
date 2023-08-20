@@ -1,6 +1,11 @@
 # stereo_net
 Repo for implementation of StereoNet
 
+### TODO
+1. Get models .ckpt from original repo
+2. Create gradio UI with multiple IO and option to select best model
+3. Integrate UI with rest of the code (inference function)
+
 First of all, I would like to acknowledge the authors of the paper. I am not the author of the paper, I am was just trying to re-implement it. Link to the paper:  
 https://arxiv.org/abs/1807.08865.   
 
