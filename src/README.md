@@ -4,3 +4,4 @@ Just main training script and sanity check notebook. Specific information about 
 * [model](model)
 * [datasets](datasets)
 * [utils](utils)
+* [ui](ui)
