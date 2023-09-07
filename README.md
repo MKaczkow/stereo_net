@@ -41,3 +41,4 @@ README's for specific folders are in the folders themselves:
 * [src.datasets](src/datasets)
 * [src.model](src/model)
 * [src.utils](src/utils)
+* [src.ui](src/ui)
