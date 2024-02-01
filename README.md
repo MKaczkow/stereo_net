@@ -1,12 +1,12 @@
-# stereo_net
+# Stereo Net
 Repo for implementation of StereoNet
 
 ### TODO
+- [ ] Research and fix why KITTIs and dome FlyingThing are not working
+- [ ] Heavy refactor and more DRY
 - [x] Get models .ckpt from original repo
 - [x] Create gradio UI with multiple IO and option to select best model
 - [x] Integrate UI with rest of the code (inference function)
-- [ ] Heavy refactor and more DRY
-- [ ] Research and fix why KITTIs and dome FlyingThing are not working
 
 First of all, I would like to acknowledge the authors of the paper. I am not the author of the paper, I am was just trying to re-implement it. Link to the paper:  
 https://arxiv.org/abs/1807.08865.   
